@@ -1,26 +1,93 @@
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import './App.css'
 
+const BASE_URL = 'http://localhost:8080'
+
+
+
 function App() {
+
+  const [todos, setTodos] = useState([])
+  const inputRef = useRef()
   
-  useEffect(() => {
-    async function getData(){
+  async function getData(){
       try{
-        const response = await fetch('http://localhost:8080')
+        const response = await fetch(BASE_URL + '/todos')
         const data = await response.json()
-        console.log(data)
+
+        setTodos(data)
+
       }catch(e){
         console.log(e)
       }
     }
+
+  useEffect(() => {
+    
     getData()
 
   }, [])
+  console.log(todos)
+
+  async function handleSubmit(e){
+    e.preventDefault()
+    const todo = {
+      text: inputRef.current.value
+    }
+    // send this todo to our server
+    const response = await fetch(BASE_URL + '/todos',{
+      method: 'POST',
+      body: JSON.stringify(todo),
+      headers:{
+        'Content-Type': "application/json"
+      }
+    })
+    const newTodo = await response.json()
+    console.log(newTodo)
+    setTodos([...todos, newTodo])
+
+    inputRef.current.value =''
+  }
+
+  async function handleDelete(id){
+    await fetch(BASE_URL + '/todos/' + id, {
+      method: 'DELETE'
+    })
+    getData()
+  }
+
+  async function handleCheck(id){
+     await fetch(BASE_URL + '/todos/' + id, {
+      method: 'PUT',
+      
+    })
+    getData()
+    
+
+  }
 
   return (
     <>
-      Hello (from frontend)
+      <h1>Todos</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" ref={inputRef}  />
+        <button>Submit</button>
+      </form>
+      <ul>
+        {todos.map((todo) =>
+          <li key ={todo._id}>
+            <input 
+              type="checkbox" 
+              checked={todo.completed}
+              onChange={()=>handleCheck(todo._id)}
+            />
+            {todo.text}
+            <button onClick={() => handleDelete(todo._id)}>X</button>
+            </li>
+        )}
+      </ul>
+     
     </>
   )
 }
